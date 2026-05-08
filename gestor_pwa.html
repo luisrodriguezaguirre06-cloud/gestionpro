@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<meta name="theme-color" content="#1e3a8a"/>
+<meta name="description" content="GestiónPro — Gestor de Compromisos y KPIs Gerenciales"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="application-name" content="GestiónPro"/>
+<meta name="apple-mobile-web-app-title" content="GestiónPro"/>
+<link rel="manifest" href="manifest.json"/>
+<title>GestiónPro</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0f172a;--surface:#1e293b;--surface2:#263348;--border:#334155;
+  --text:#f1f5f9;--muted:#94a3b8;--dim:#475569;
+  --blue:#3b82f6;--green:#22c55e;--yellow:#f59e0b;--red:#ef4444;--purple:#a78bfa;
+  --radius:12px;--shadow:0 4px 24px rgba(0,0,0,.4);
+  --font:'Inter',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden}
+/* NAV */
+nav{background:linear-gradient(135deg,#1e3a8a,#1d4ed8);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:50;box-shadow:var(--shadow)}
+.nav-title{font-size:16px;font-weight:800;letter-spacing:-.3px}
+.nav-sub{font-size:11px;color:#93c5fd;margin-top:1px}
+.nav-actions{display:flex;gap:8px}
+/* TABS */
+.tabs{display:flex;gap:6px;padding:12px 16px;overflow-x:auto;scrollbar-width:none;background:var(--surface);border-bottom:1px solid var(--border)}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;transition:.15s}
+.tab.active{background:var(--blue);color:#fff}
+.tab:not(.active){background:transparent;color:var(--muted)}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:10px;border:none;cursor:pointer;font-size:13px;font-weight:700;transition:.15s;line-height:1}
+.btn:active{transform:scale(.97)}
+.btn-blue{background:var(--blue);color:#fff}
+.btn-green{background:var(--green);color:#000}
+.btn-yellow{background:var(--yellow);color:#000}
+.btn-ghost{background:var(--surface2);color:var(--muted)}
+.btn-sm{padding:5px 10px;font-size:12px;border-radius:8px}
+.btn-danger{background:#7f1d1d;color:#fca5a5}
+/* CARDS */
+.card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:16px}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:10px;padding:14px 16px}
+.kpi{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:14px 10px;text-align:center}
+.kpi-val{font-size:26px;font-weight:900;line-height:1}
+.kpi-lbl{font-size:11px;color:var(--muted);margin-top:3px}
+/* COMPROMISOS */
+.section{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.comp-card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:13px 14px;display:flex;gap:12px;align-items:flex-start;transition:.2s}
+.comp-card.vencido{border-color:#ef444433;background:#7f1d1d0a}
+.comp-card.completado{border-color:#22c55e22;opacity:.75}
+.comp-check{width:20px;height:20px;cursor:pointer;accent-color:var(--green);margin-top:2px;flex-shrink:0}
+.comp-body{flex:1;min-width:0}
+.comp-title{font-weight:700;font-size:14px;word-break:break-word}
+.comp-title.done{text-decoration:line-through;color:var(--dim)}
+.comp-meta{font-size:12px;color:var(--muted);margin-top:4px;display:flex;flex-wrap:wrap;gap:6px}
+.comp-actions{display:flex;gap:6px;flex-shrink:0}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700}
+.badge-green{background:#14532d;color:#4ade80}
+.badge-yellow{background:#78350f;color:#fcd34d}
+.badge-red{background:#7f1d1d;color:#f87171}
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
+.modal{background:var(--surface);border-radius:16px;padding:24px;width:100%;max-width:440px;border:1px solid var(--border);box-shadow:var(--shadow);max-height:90vh;overflow-y:auto}
+.modal h3{font-size:17px;margin-bottom:18px}
+label{font-size:12px;color:var(--muted);display:block;margin-bottom:4px;margin-top:10px}
+label:first-of-type{margin-top:0}
+input,textarea,select{width:100%;background:#0f172a;border:1px solid var(--border);border-radius:8px;color:var(--text);padding:9px 11px;font-size:14px;font-family:var(--font);outline:none;transition:.15s}
+input:focus,textarea:focus,select:focus{border-color:var(--blue)}
+textarea{resize:vertical;min-height:72px}
+.modal-actions{display:flex;gap:10px;margin-top:16px}
+.modal-actions .btn{flex:1;justify-content:center}
+/* ALERTS */
+.alert-popup{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.7);backdrop-filter:blur(6px)}
+.alert-box-wrap{background:var(--surface);border-radius:16px;padding:24px;width:100%;max-width:420px;border:1px solid var(--border);box-shadow:var(--shadow);max-height:85vh;overflow-y:auto}
+.alert-item{border-radius:9px;padding:9px 12px;margin-bottom:6px;font-size:13px}
+/* CAMERA */
+.cam-area{background:#000;border-radius:var(--radius);overflow:hidden;position:relative;aspect-ratio:4/3;width:100%}
+#videoEl{width:100%;height:100%;object-fit:cover}
+#canvasEl{display:none}
+.cam-overlay{position:absolute;inset:0;border:2px dashed rgba(255,255,255,.3);border-radius:var(--radius);pointer-events:none}
+.ia-result{background:var(--surface2);border-radius:var(--radius);border:1px solid var(--border);padding:14px;margin-top:12px}
+.ia-result-item{background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:8px;border-left:3px solid var(--blue)}
+/* CHARTS */
+.chart-wrap{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:16px;margin-bottom:12px}
+.chart-title{font-size:14px;font-weight:700;color:var(--muted);margin-bottom:12px}
+canvas.chart{max-height:220px}
+/* FILTERS */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.filter-btn{padding:5px 12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:12px;font-weight:600;transition:.15s}
+.filter-btn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1d4ed8;color:#fff;padding:10px 20px;border-radius:30px;font-size:13px;font-weight:600;z-index:400;opacity:0;transition:.3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+/* SEMAFORO */
+.semaforo{display:flex;gap:10px;justify-content:center;margin:12px 0}
+.sem-dot{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;box-shadow:0 0 16px currentColor}
+/* RESPONSIVE */
+@media(max-width:480px){.card-grid{grid-template-columns:repeat(3,1fr)}.nav-title{font-size:14px}}
+/* PDF hidden */
+@media print{body{background:#fff;color:#000}.no-print{display:none!important}}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="no-print">
+  <div>
+    <div class="nav-title">📋 GestiónPro</div>
+    <div class="nav-sub">Gestor de Compromisos & KPIs</div>
+  </div>
+  <div class="nav-actions">
+    <button class="btn btn-yellow btn-sm" onclick="App.showAlerts()">🔔</button>
+    <button class="btn btn-green btn-sm" onclick="App.exportPDF()">📄 PDF</button>
+  </div>
+</nav>
+
+<!-- KPI BAR -->
+<div class="card-grid no-print" id="kpiBar"></div>
+
+<!-- TABS -->
+<div class="tabs no-print" id="tabBar">
+  <button class="tab active" onclick="App.setTab('lista')">📋 Lista</button>
+  <button class="tab" onclick="App.setTab('graficas')">📊 Gráficas</button>
+  <button class="tab" onclick="App.setTab('alertas')">🚨 Alertas</button>
+  <button class="tab" onclick="App.setTab('camara')">📷 IA Cámara</button>
+</div>
+
+<!-- CONTENT -->
+<div id="content"></div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ALERT POPUP -->
+<div class="alert-popup" id="alertPopup" style="display:none">
+  <div class="alert-box-wrap">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 style="font-size:17px">🔔 Alertas de Compromisos</h3>
+      <button class="btn btn-ghost btn-sm" onclick="App.hideAlerts()">✕</button>
+    </div>
+    <div id="alertContent"></div>
+    <button class="btn btn-blue" style="width:100%;justify-content:center;margin-top:12px" onclick="App.hideAlerts()">Entendido</button>
+  </div>
+</div>
+
+<!-- MODAL FORM -->
+<div class="overlay" id="formModal" style="display:none">
+  <div class="modal">
+    <h3 id="formTitle">➕ Nuevo Compromiso</h3>
+    <label>Título *</label>
+    <input id="fTitulo" placeholder="Descripción del compromiso"/>
+    <label>Responsable *</label>
+    <input id="fResponsable" placeholder="Nombre del responsable"/>
+    <label>Fecha límite *</label>
+    <input id="fFecha" type="date"/>
+    <label>Prioridad</label>
+    <select id="fPrioridad">
+      <option value="alta">🔴 Alta</option>
+      <option value="media" selected>🟡 Media</option>
+      <option value="baja">🟢 Baja</option>
+    </select>
+    <label>Observaciones</label>
+    <textarea id="fObs" placeholder="Notas adicionales..."></textarea>
+    <div class="modal-actions">
+      <button class="btn btn-blue" onclick="App.saveForm()">Guardar</button>
+      <button class="btn btn-ghost" onclick="App.closeForm()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- IA CONFIRM MODAL -->
+<div class="overlay" id="iaModal" style="display:none">
+  <div class="modal">
+    <h3>🤖 IA — Compromisos Detectados</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Revisa y confirma los compromisos antes de importarlos:</p>
+    <div id="iaModalList"></div>
+    <div class="modal-actions">
+      <button class="btn btn-green" onclick="App.confirmIAImport()">✅ Importar todos</button>
+      <button class="btn btn-ghost" onclick="App.closeIAModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── ESTADO CENTRAL ───────────────────────────────────────────────────────────
+const Store = (() => {
+  const KEY = 'rh_compromisos_v2';
+  let _data = null;
+
+  const defaults = () => ([
+    {id:uid(),titulo:"Reunión de planificación Q2",responsable:"Jair Reyes",fecha:"2026-05-07",estado:true,prioridad:"alta",obs:"Confirmar asistencia de todos los líderes",creadoEn:Date.now()},
+    {id:uid(),titulo:"Entrega de informe financiero",responsable:"Luz Neyda Sicacha",fecha:"2026-05-05",estado:false,prioridad:"alta",obs:"Incluir proyecciones del semestre",creadoEn:Date.now()},
+    {id:uid(),titulo:"Revisión de cronograma obra",responsable:"Jair Reyes",fecha:"2026-05-10",estado:false,prioridad:"media",obs:"",creadoEn:Date.now()},
+    {id:uid(),titulo:"Capacitación equipo técnico",responsable:"Carlos M.",fecha:"2026-05-08",estado:false,prioridad:"media",obs:"Sala de conferencias piso 3",creadoEn:Date.now()},
+    {id:uid(),titulo:"Cierre de contrato proveedor",responsable:"Luz Neyda Sicacha",fecha:"2026-04-30",estado:true,prioridad:"baja",obs:"Contrato firmado digitalmente",creadoEn:Date.now()},
+  ]);
+
+  function uid(){ return '_'+Math.random().toString(36).slice(2,9)+Date.now().toString(36); }
+
+  function load(){
+    if(_data) return _data;
+    try{
+      const raw = localStorage.getItem(KEY);
+      _data = raw ? JSON.parse(raw) : defaults();
+    } catch(e){ _data = defaults(); }
+    return _data;
+  }
+
+  function save(){
+    try{ localStorage.setItem(KEY, JSON.stringify(_data)); } catch(e){ console.warn('Storage full'); }
+  }
+
+  return {
+    getAll(){ return load().slice(); },
+    add(item){ load().push({...item, id:uid(), creadoEn:Date.now()}); save(); },
+    update(id, patch){ const i=load().findIndex(c=>c.id===id); if(i>=0){ _data[i]={..._data[i],...patch}; save(); } },
+    remove(id){ _data=load().filter(c=>c.id!==id); save(); },
+    toggle(id){ const c=load().find(c=>c.id===id); if(c){ c.estado=!c.estado; save(); } },
+  };
+})();
+
+// ─── UTILIDADES ───────────────────────────────────────────────────────────────
+const today = () => { const d=new Date(); d.setHours(0,0,0,0); return d; };
+const parseDate = s => { const d=new Date(s+'T00:00:00'); return d; };
+const diffDays = s => Math.ceil((parseDate(s)-today())/86400000);
+const sanitize = s => String(s||'').replace(/[<>"'&]/g,'').trim().slice(0,500);
+
+function getEstado(c){
+  if(c.estado) return 'completado';
+  return diffDays(c.fecha)<0 ? 'vencido' : 'pendiente';
+}
+
+function badgeHTML(est){
+  const m={completado:['badge-green','✅'],pendiente:['badge-yellow','⏳'],vencido:['badge-red','🚨']};
+  const [cls,ico]=m[est]||m.pendiente;
+  return `<span class="badge ${cls}">${ico} ${est.toUpperCase()}</span>`;
+}
+
+function prioColor(p){ return p==='alta'?'#ef4444':p==='media'?'#f59e0b':'#22c55e'; }
+
+// ─── CHARTS (singleton, destruidos antes de recrear) ─────────────────────────
+const ChartMgr = (() => {
+  const instances = {};
+  function destroy(id){ if(instances[id]){ instances[id].destroy(); delete instances[id]; } }
+  function create(id, cfg){
+    destroy(id);
+    const el = document.getElementById(id);
+    if(!el) return;
+    instances[id] = new Chart(el.getContext('2d'), cfg);
+  }
+  return { create, destroy };
+})();
+
+// ─── CÁMARA ───────────────────────────────────────────────────────────────────
+const Camera = (() => {
+  let stream = null;
+  let pendingItems = [];
+
+  async function start(){
+    const vid = document.getElementById('videoEl');
+    if(!vid) return;
+    if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+      vid.srcObject = stream;
+      await vid.play();
+    } catch(e){
+      App.toast('⚠️ Cámara no disponible — sube una imagen');
+    }
+  }
+
+  function stop(){
+    if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; }
+    const vid=document.getElementById('videoEl');
+    if(vid){ vid.srcObject=null; }
+  }
+
+  async function capture(){
+    const vid=document.getElementById('videoEl');
+    const canvas=document.getElementById('canvasEl');
+    if(!vid||!canvas) return null;
+    canvas.width=vid.videoWidth||640;
+    canvas.height=vid.videoHeight||480;
+    canvas.getContext('2d').drawImage(vid,0,0);
+    return canvas.toDataURL('image/jpeg',0.85).split(',')[1];
+  }
+
+  async function analyzeImage(b64){
+    const statusEl = document.getElementById('iaStatus');
+    if(statusEl) statusEl.textContent = '🤖 Analizando imagen con IA...';
+
+    const prompt = `Eres un asistente especializado en extraer compromisos de reuniones. 
+Analiza la imagen y extrae TODOS los compromisos, tareas o acuerdos que encuentres.
+Responde ÚNICAMENTE con un JSON array con este formato exacto (sin texto adicional, sin markdown):
+[{"titulo":"descripción del compromiso","responsable":"nombre si se menciona, sino 'Por asignar'","fecha":"YYYY-MM-DD si se menciona fecha, sino fecha en 7 días desde hoy","prioridad":"alta|media|baja","obs":"observaciones adicionales"}]
+Si no encuentras compromisos responde: []
+Hoy es ${new Date().toISOString().slice(0,10)}.`;
+
+    try{
+      const res = await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          model:'claude-sonnet-4-20250514',
+          max_tokens:1000,
+          messages:[{
+            role:'user',
+            content:[
+              {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
+              {type:'text',text:prompt}
+            ]
+          }]
+        })
+      });
+
+      if(!res.ok) throw new Error(`API ${res.status}`);
+      const data = await res.json();
+      const text = (data.content||[]).map(i=>i.text||'').join('');
+      const clean = text.replace(/```json|```/g,'').trim();
+      const items = JSON.parse(clean);
+      if(!Array.isArray(items)) throw new Error('Formato inválido');
+
+      pendingItems = items.map(item=>({
+        titulo: sanitize(item.titulo||'Compromiso sin título'),
+        responsable: sanitize(item.responsable||'Por asignar'),
+        fecha: /^\d{4}-\d{2}-\d{2}$/.test(item.fecha||'') ? item.fecha : defaultDate(),
+        prioridad: ['alta','media','baja'].includes(item.prioridad) ? item.prioridad : 'media',
+        obs: sanitize(item.obs||''),
+        estado: false,
+      }));
+
+      return pendingItems;
+    } catch(e){
+      console.error('IA error:',e);
+      if(statusEl) statusEl.textContent = '❌ Error al analizar — intenta de nuevo';
+      return null;
+    }
+  }
+
+  function defaultDate(){
+    const d=new Date(); d.setDate(d.getDate()+7);
+    return d.toISOString().slice(0,10);
+  }
+
+  function getPending(){ return pendingItems; }
+  function clearPending(){ pendingItems=[]; }
+
+  return { start, stop, capture, analyzeImage, getPending, clearPending };
+})();
+
+// ─── APP PRINCIPAL ─────────────────────────────────────────────────────────────
+const App = (() => {
+  let currentTab = 'lista';
+  let filtro = 'todos';
+  let editId = null;
+  let alertTimer = null;
+  let cameraActive = false;
+
+  // ── INIT ──
+  function init(){
+    renderKPIs();
+    renderContent();
+    scheduleAlerts();
+    setTimeout(()=>showAlerts(), 1200);
+  }
+
+  function scheduleAlerts(){
+    if(alertTimer) clearInterval(alertTimer);
+    alertTimer = setInterval(()=>showAlerts(), 30*60*1000);
+  }
+
+  // ── TABS ──
+  function setTab(tab){
+    if(currentTab==='camara' && tab!=='camara') Camera.stop(), cameraActive=false;
+    currentTab=tab;
+    document.querySelectorAll('.tab').forEach((b,i)=>{
+      b.classList.toggle('active',['lista','graficas','alertas','camara'][i]===tab);
+    });
+    renderContent();
+  }
+
+  // ── RENDER ROUTER ──
+  function renderContent(){
+    renderKPIs();
+    const el=document.getElementById('content');
+    if(!el) return;
+    const map={lista:renderLista,graficas:renderGraficas,alertas:renderAlertasTab,camara:renderCamara};
+    (map[currentTab]||renderLista)();
+  }
+
+  // ── KPIs ──
+  function renderKPIs(){
+    const cs=Store.getAll();
+    const total=cs.length;
+    const comp=cs.filter(c=>c.estado).length;
+    const venc=cs.filter(c=>!c.estado&&diffDays(c.fecha)<0).length;
+    const pend=cs.filter(c=>!c.estado&&diffDays(c.fecha)>=0).length;
+    const pct=total?Math.round(comp/total*100):0;
+    document.getElementById('kpiBar').innerHTML=`
+      <div class="kpi"><div class="kpi-val" style="color:var(--green)">${pct}%</div><div class="kpi-lbl">Cumplimiento</div></div>
+      <div class="kpi"><div class="kpi-val" style="color:var(--blue)">${total}</div><div class="kpi-lbl">Total</div></div>
+      <div class="kpi"><div class="kpi-val" style="color:var(--green)">${comp}</div><div class="kpi-lbl">Completos</div></div>
+      <div class="kpi"><div class="kpi-val" style="color:var(--yellow)">${pend}</div><div class="kpi-lbl">Pendientes</div></div>
+      <div class="kpi"><div class="kpi-val" style="color:var(--red)">${venc}</div><div class="kpi-lbl">Vencidos</div></div>
+    `;
+  }
+
+  // ── LISTA ──
+  function renderLista(){
+    const cs=Store.getAll();
+    const filtered=cs.filter(c=>filtro==='todos'||getEstado(c)===filtro);
+    document.getElementById('content').innerHTML=`
+      <div class="section">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+          <div class="filters">
+            ${['todos','completado','pendiente','vencido'].map(f=>`
+              <button class="filter-btn ${filtro===f?'active':''}" onclick="App.setFiltro('${f}')">${f.charAt(0).toUpperCase()+f.slice(1)}</button>
+            `).join('')}
+          </div>
+          <button class="btn btn-blue btn-sm" onclick="App.openForm()">+ Agregar</button>
+        </div>
+        ${filtered.length===0?`<div style="text-align:center;padding:32px;color:var(--dim)">Sin compromisos en este filtro.</div>`:''}
+        ${filtered.map(c=>{
+          const est=getEstado(c);
+          const d=diffDays(c.fecha);
+          const daysLabel=est==='completado'?'':(d<0?`${Math.abs(d)}d vencido`:d===0?'¡Vence hoy!':d===1?'Mañana':`${d}d restantes`);
+          return `<div class="comp-card ${est}">
+            <input type="checkbox" class="comp-check" ${c.estado?'checked':''} onchange="App.toggle('${c.id}')"/>
+            <div class="comp-body">
+              <div class="comp-title ${c.estado?'done':''}">${escHTML(c.titulo)}</div>
+              <div class="comp-meta">
+                <span>👤 ${escHTML(c.responsable)}</span>
+                <span>📅 ${c.fecha}</span>
+                <span style="color:${prioColor(c.prioridad)}">● ${c.prioridad}</span>
+                ${daysLabel?`<span style="color:${est==='vencido'?'var(--red)':est==='completado'?'var(--green)':'var(--yellow)'}">${daysLabel}</span>`:''}
+              </div>
+              ${c.obs?`<div style="font-size:12px;color:var(--dim);margin-top:4px">📝 ${escHTML(c.obs)}</div>`:''}
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+              ${badgeHTML(est)}
+              <div style="display:flex;gap:6px;margin-top:4px">
+                <button class="btn btn-ghost btn-sm" onclick="App.openEdit('${c.id}')">✏️</button>
+                <button class="btn btn-danger btn-sm" onclick="App.remove('${c.id}')">🗑</button>
+              </div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  }
+
+  // ── GRAFICAS ──
+  function renderGraficas(){
+    const cs=Store.getAll();
+    const comp=cs.filter(c=>c.estado).length;
+    const pend=cs.filter(c=>!c.estado&&diffDays(c.fecha)>=0).length;
+    const venc=cs.filter(c=>!c.estado&&diffDays(c.fecha)<0).length;
+
+    const responsables=[...new Set(cs.map(c=>c.responsable))];
+    const barLabels=responsables.map(r=>r.split(' ')[0]);
+    const barComp=responsables.map(r=>cs.filter(c=>c.responsable===r&&c.estado).length);
+    const barPend=responsables.map(r=>cs.filter(c=>c.responsable===r&&!c.estado&&diffDays(c.fecha)>=0).length);
+    const barVenc=responsables.map(r=>cs.filter(c=>c.responsable===r&&!c.estado&&diffDays(c.fecha)<0).length);
+
+    document.getElementById('content').innerHTML=`
+      <div class="section">
+        <div class="chart-wrap"><div class="chart-title">📊 Distribución por Estado</div><canvas id="cPie" class="chart"></canvas></div>
+        <div class="chart-wrap"><div class="chart-title">👥 Por Responsable</div><canvas id="cBar" class="chart"></canvas></div>
+        <div class="chart-wrap"><div class="chart-title">📈 Evolución de Cumplimiento</div><canvas id="cLine" class="chart"></canvas></div>
+      </div>`;
+
+    const total=cs.length||1;
+    const pct=Math.round(comp/total*100);
+
+    requestAnimationFrame(()=>{
+      ChartMgr.create('cPie',{type:'doughnut',data:{labels:['Completados','Pendientes','Vencidos'],datasets:[{data:[comp,pend,venc],backgroundColor:['#22c55e','#f59e0b','#ef4444'],borderWidth:0}]},options:{responsive:true,plugins:{legend:{labels:{color:'#94a3b8',font:{size:12}}}}}});
+      ChartMgr.create('cBar',{type:'bar',data:{labels:barLabels,datasets:[{label:'Completados',data:barComp,backgroundColor:'#22c55e',borderRadius:4},{label:'Pendientes',data:barPend,backgroundColor:'#f59e0b',borderRadius:4},{label:'Vencidos',data:barVenc,backgroundColor:'#ef4444',borderRadius:4}]},options:{responsive:true,plugins:{legend:{labels:{color:'#94a3b8',font:{size:12}}}},scales:{x:{ticks:{color:'#94a3b8'},grid:{color:'#334155'}},y:{ticks:{color:'#94a3b8'},grid:{color:'#334155'}}}}});
+      ChartMgr.create('cLine',{type:'line',data:{labels:['Mar','Abr','May'],datasets:[{label:'% Cumplimiento',data:[55,68,pct],borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.15)',fill:true,tension:.4,pointRadius:5}]},options:{responsive:true,plugins:{legend:{labels:{color:'#94a3b8',font:{size:12}}}},scales:{x:{ticks:{color:'#94a3b8'},grid:{color:'#334155'}},y:{min:0,max:100,ticks:{color:'#94a3b8',callback:v=>v+'%'},grid:{color:'#334155'}}}}});
+    });
+  }
+
+  // ── ALERTAS TAB ──
+  function renderAlertasTab(){
+    const cs=Store.getAll();
+    const hoy=cs.filter(c=>!c.estado&&diffDays(c.fecha)===0);
+    const man=cs.filter(c=>!c.estado&&diffDays(c.fecha)===1);
+    const venc=cs.filter(c=>!c.estado&&diffDays(c.fecha)<0).sort((a,b)=>diffDays(a.fecha)-diffDays(b.fecha));
+    const ok=cs.filter(c=>!c.estado&&diffDays(c.fecha)>1).length;
+
+    document.getElementById('content').innerHTML=`
+      <div class="section">
+        <div class="semaforo">
+          <div class="sem-dot" style="background:#ef444433;color:#ef4444">${venc.length}</div>
+          <div class="sem-dot" style="background:#f59e0b33;color:#f59e0b">${hoy.length}</div>
+          <div class="sem-dot" style="background:#facc1533;color:#facc15">${man.length}</div>
+          <div class="sem-dot" style="background:#22c55e33;color:#22c55e">${ok}</div>
+        </div>
+        <div style="display:flex;justify-content:center;gap:16px;font-size:11px;color:var(--muted);margin-bottom:12px">
+          <span>🚨 Vencidos</span><span>⚠️ Hoy</span><span>📅 Mañana</span><span>✅ A tiempo</span>
+        </div>
+        <div class="chart-wrap"><canvas id="cAlerta" class="chart" style="max-height:160px"></canvas></div>
+        ${[...venc,...hoy,...man].length===0?`<div style="text-align:center;padding:24px;color:var(--green)">✅ ¡Todo al día!</div>`:''}
+        ${venc.map(c=>`<div class="comp-card vencido"><div class="comp-body"><div class="comp-title">${escHTML(c.titulo)}</div><div class="comp-meta"><span>👤 ${escHTML(c.responsable)}</span><span>📅 ${c.fecha}</span></div></div><span style="color:var(--red);font-weight:800;font-size:13px">${Math.abs(diffDays(c.fecha))}d vencido</span></div>`).join('')}
+        ${hoy.map(c=>`<div class="comp-card" style="border-color:#f59e0b44"><div class="comp-body"><div class="comp-title">${escHTML(c.titulo)}</div><div class="comp-meta"><span>👤 ${escHTML(c.responsable)}</span></div></div><span style="color:var(--yellow);font-weight:800;font-size:13px">¡Hoy!</span></div>`).join('')}
+        ${man.map(c=>`<div class="comp-card"><div class="comp-body"><div class="comp-title">${escHTML(c.titulo)}</div><div class="comp-meta"><span>👤 ${escHTML(c.responsable)}</span></div></div><span style="color:#60a5fa;font-weight:800;font-size:13px">Mañana</span></div>`).join('')}
+      </div>`;
+
+    requestAnimationFrame(()=>{
+      ChartMgr.create('cAlerta',{type:'bar',data:{labels:['Vencidos','Vencen hoy','Vencen mañana','A tiempo'],datasets:[{data:[venc.length,hoy.length,man.length,ok],backgroundColor:['#ef4444','#f59e0b','#facc15','#22c55e'],borderRadius:6}]},options:{indexAxis:'y',responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#94a3b8'},grid:{color:'#334155'}},y:{ticks:{color:'#94a3b8'},grid:{display:false}}}}});
+    });
+  }
+
+  // ── CÁMARA IA ──
+  function renderCamara(){
+    document.getElementById('content').innerHTML=`
+      <div class="section">
+        <div class="card">
+          <div style="font-size:14px;font-weight:700;margin-bottom:12px">📷 Captura con IA</div>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Apunta la cámara a un acta, pizarra o documento con compromisos. La IA los detectará y los importará automáticamente.</p>
+          <div class="cam-area">
+            <video id="videoEl" autoplay playsinline muted></video>
+            <canvas id="canvasEl"></canvas>
+            <div class="cam-overlay"></div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+            <button class="btn btn-blue" style="flex:1;justify-content:center" onclick="App.startCamera()">📷 Activar Cámara</button>
+            <button class="btn btn-green" style="flex:1;justify-content:center" onclick="App.captureAndAnalyze()">🤖 Analizar</button>
+          </div>
+          <div style="margin-top:10px">
+            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:6px">O sube una imagen:</label>
+            <input type="file" accept="image/*" id="imgUpload" onchange="App.handleImageUpload(event)" style="font-size:13px"/>
+          </div>
+          <div id="iaStatus" style="margin-top:12px;font-size:13px;color:var(--muted);min-height:20px"></div>
+        </div>
+        <div id="iaResults"></div>
+      </div>`;
+
+    // Auto-start camera
+    setTimeout(()=>startCamera(), 300);
+  }
+
+  async function startCamera(){
+    cameraActive=true;
+    await Camera.start();
+  }
+
+  async function captureAndAnalyze(){
+    const statusEl=document.getElementById('iaStatus');
+    if(statusEl) statusEl.textContent='📸 Capturando...';
+    const b64=await Camera.capture();
+    if(!b64){ if(statusEl) statusEl.textContent='⚠️ Sin imagen — activa la cámara primero'; return; }
+    await runIA(b64);
+  }
+
+  async function handleImageUpload(e){
+    const file=e.target.files&&e.target.files[0];
+    if(!file) return;
+    if(!file.type.startsWith('image/')){ toast('⚠️ Solo imágenes'); return; }
+    if(file.size>10*1024*1024){ toast('⚠️ Imagen demasiado grande (máx 10MB)'); return; }
+    const reader=new FileReader();
+    reader.onload=async ev=>{
+      const b64=ev.target.result.split(',')[1];
+      await runIA(b64);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function runIA(b64){
+    const statusEl=document.getElementById('iaStatus');
+    const resultsEl=document.getElementById('iaResults');
+    if(resultsEl) resultsEl.innerHTML='';
+    const items=await Camera.analyzeImage(b64);
+    if(!items){ return; }
+    if(statusEl) statusEl.textContent=items.length===0?'ℹ️ No se encontraron compromisos':'';
+    if(items.length===0){ if(resultsEl) resultsEl.innerHTML=`<div class="card" style="text-align:center;color:var(--muted);padding:20px">🔍 No se detectaron compromisos en la imagen.<br>Intenta con otra foto más nítida.</div>`; return; }
+
+    // Mostrar modal de confirmación
+    const list=document.getElementById('iaModalList');
+    if(list){
+      list.innerHTML=items.map((item,i)=>`
+        <div class="ia-result-item">
+          <div style="font-weight:700;font-size:14px">${escHTML(item.titulo)}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">👤 ${escHTML(item.responsable)} | 📅 ${item.fecha} | ● ${item.prioridad}</div>
+          ${item.obs?`<div style="font-size:12px;color:var(--dim);margin-top:3px">📝 ${escHTML(item.obs)}</div>`:''}
+        </div>`).join('');
+    }
+    document.getElementById('iaModal').style.display='flex';
+  }
+
+  function confirmIAImport(){
+    const items=Camera.getPending();
+    items.forEach(item=>Store.add(item));
+    Camera.clearPending();
+    closeIAModal();
+    toast(`✅ ${items.length} compromiso(s) importado(s)`);
+    renderContent();
+  }
+
+  function closeIAModal(){ document.getElementById('iaModal').style.display='none'; }
+
+  // ── FORM ──
+  function openForm(){
+    editId=null;
+    document.getElementById('formTitle').textContent='➕ Nuevo Compromiso';
+    document.getElementById('fTitulo').value='';
+    document.getElementById('fResponsable').value='';
+    document.getElementById('fFecha').value='';
+    document.getElementById('fPrioridad').value='media';
+    document.getElementById('fObs').value='';
+    document.getElementById('formModal').style.display='flex';
+  }
+
+  function openEdit(id){
+    const c=Store.getAll().find(x=>x.id===id);
+    if(!c) return;
+    editId=id;
+    document.getElementById('formTitle').textContent='✏️ Editar Compromiso';
+    document.getElementById('fTitulo').value=c.titulo;
+    document.getElementById('fResponsable').value=c.responsable;
+    document.getElementById('fFecha').value=c.fecha;
+    document.getElementById('fPrioridad').value=c.prioridad||'media';
+    document.getElementById('fObs').value=c.obs||'';
+    document.getElementById('formModal').style.display='flex';
+  }
+
+  function saveForm(){
+    const titulo=sanitize(document.getElementById('fTitulo').value);
+    const responsable=sanitize(document.getElementById('fResponsable').value);
+    const fecha=document.getElementById('fFecha').value;
+    if(!titulo||!responsable||!fecha){ toast('⚠️ Completa los campos obligatorios'); return; }
+    const item={titulo,responsable,fecha,prioridad:document.getElementById('fPrioridad').value,obs:sanitize(document.getElementById('fObs').value),estado:false};
+    if(editId){ Store.update(editId,item); toast('✅ Compromiso actualizado'); }
+    else { Store.add(item); toast('✅ Compromiso agregado'); }
+    closeForm();
+    renderContent();
+  }
+
+  function closeForm(){ document.getElementById('formModal').style.display='none'; editId=null; }
+
+  // ── ACCIONES ──
+  function toggle(id){ Store.toggle(id); renderContent(); }
+  function remove(id){ if(confirm('¿Eliminar este compromiso?')){ Store.remove(id); renderContent(); toast('🗑 Eliminado'); } }
+  function setFiltro(f){ filtro=f; renderLista(); }
+
+  // ── ALERTS POPUP ──
+  function showAlerts(){
+    const cs=Store.getAll();
+    const hoy=cs.filter(c=>!c.estado&&diffDays(c.fecha)===0);
+    const man=cs.filter(c=>!c.estado&&diffDays(c.fecha)===1);
+    const venc=cs.filter(c=>!c.estado&&diffDays(c.fecha)<0);
+    const all=[...venc,...hoy,...man];
+
+    const alertContent=document.getElementById('alertContent');
+    if(!alertContent) return;
+
+    if(all.length===0){
+      alertContent.innerHTML=`<div style="text-align:center;color:var(--green);padding:16px;font-size:15px">✅ ¡Todo al día! Sin alertas pendientes.</div>`;
+    } else {
+      let html='';
+      if(venc.length) html+=`<div style="color:var(--red);font-weight:700;margin-bottom:6px">🚨 Vencidos (${venc.length})</div>`+venc.map(c=>`<div class="alert-item" style="background:#7f1d1d33;color:#fca5a5">• ${escHTML(c.titulo)} — ${escHTML(c.responsable)} (${Math.abs(diffDays(c.fecha))}d)</div>`).join('');
+      if(hoy.length) html+=`<div style="color:var(--yellow);font-weight:700;margin:10px 0 6px">⚠️ Vencen HOY (${hoy.length})</div>`+hoy.map(c=>`<div class="alert-item" style="background:#78350f33;color:#fde68a">• ${escHTML(c.titulo)} — ${escHTML(c.responsable)}</div>`).join('');
+      if(man.length) html+=`<div style="color:#60a5fa;font-weight:700;margin:10px 0 6px">📅 Vencen Mañana (${man.length})</div>`+man.map(c=>`<div class="alert-item" style="background:#1e3a5f33;color:#bfdbfe">• ${escHTML(c.titulo)} — ${escHTML(c.responsable)}</div>`).join('');
+      alertContent.innerHTML=html;
+    }
+    document.getElementById('alertPopup').style.display='flex';
+  }
+
+  function hideAlerts(){ document.getElementById('alertPopup').style.display='none'; }
+
+  // ── PDF ──
+  function exportPDF(){
+    const cs=Store.getAll();
+    const total=cs.length, comp=cs.filter(c=>c.estado).length;
+    const venc=cs.filter(c=>!c.estado&&diffDays(c.fecha)<0).length;
+    const pend=cs.filter(c=>!c.estado&&diffDays(c.fecha)>=0).length;
+    const pct=total?Math.round(comp/total*100):0;
+    const rows=cs.map(c=>{
+      const est=getEstado(c);
+      const col=est==='completado'?'#16a34a':est==='vencido'?'#dc2626':'#d97706';
+      return `<tr><td>${escHTML(c.titulo)}</td><td>${escHTML(c.responsable)}</td><td>${c.fecha}</td><td style="color:${col};font-weight:700">${est.toUpperCase()}</td><td>${escHTML(c.obs||'-')}</td></tr>`;
+    }).join('');
+
+    const w=window.open('','_blank');
+    if(!w) return;
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Informe Gerencial</title>
+    <style>body{font-family:Arial,sans-serif;padding:32px;color:#111;max-width:900px;margin:auto}
+    h1{color:#1e3a8a;border-bottom:3px solid #1e3a8a;padding-bottom:8px}
+    .kpis{display:flex;flex-wrap:wrap;gap:12px;margin:16px 0}
+    .kpi{flex:1 1 100px;background:#f8fafc;border-radius:8px;padding:14px;text-align:center;border:1px solid #e2e8f0}
+    .kpi .v{font-size:28px;font-weight:900}.kpi .l{font-size:12px;color:#64748b}
+    table{width:100%;border-collapse:collapse;margin-top:20px}
+    th{background:#1e3a8a;color:#fff;padding:10px;text-align:left;font-size:13px}
+    td{padding:9px 10px;border-bottom:1px solid #e2e8f0;font-size:13px}
+    tr:nth-child(even){background:#f8fafc}
+    footer{margin-top:32px;text-align:center;font-size:11px;color:#94a3b8}
+    </style></head><body>
+    <h1>📋 Informe Gerencial de Compromisos</h1>
+    <p style="color:#64748b;font-size:13px">Generado: ${new Date().toLocaleDateString('es-CO',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</p>
+    <h2 style="margin-top:20px;color:#1e3a8a">Resumen Ejecutivo</h2>
+    <div class="kpis">
+      <div class="kpi"><div class="v" style="color:#16a34a">${pct}%</div><div class="l">Cumplimiento</div></div>
+      <div class="kpi"><div class="v" style="color:#1d4ed8">${total}</div><div class="l">Total</div></div>
+      <div class="kpi"><div class="v" style="color:#16a34a">${comp}</div><div class="l">Completados</div></div>
+      <div class="kpi"><div class="v" style="color:#d97706">${pend}</div><div class="l">Pendientes</div></div>
+      <div class="kpi"><div class="v" style="color:#dc2626">${venc}</div><div class="l">Vencidos</div></div>
+    </div>
+    <h2 style="color:#1e3a8a">Detalle de Compromisos</h2>
+    <table><thead><tr><th>Compromiso</th><th>Responsable</th><th>Fecha</th><th>Estado</th><th>Observaciones</th></tr></thead><tbody>${rows}</tbody></table>
+    <footer>GestiónPro — Gestor de Compromisos & KPIs Gerenciales</footer>
+    </body></html>`);
+    w.document.close();
+    setTimeout(()=>w.print(),500);
+  }
+
+  // ── TOAST ──
+  function toast(msg,dur=2800){
+    const el=document.getElementById('toast');
+    if(!el) return;
+    el.textContent=msg;
+    el.classList.add('show');
+    clearTimeout(el._t);
+    el._t=setTimeout(()=>el.classList.remove('show'),dur);
+  }
+
+  // ── UTILS ──
+  function escHTML(s){ const d=document.createElement('div'); d.textContent=String(s||''); return d.innerHTML; }
+
+  return { init, setTab, setFiltro, toggle, remove, openForm, openEdit, saveForm, closeForm,
+           showAlerts, hideAlerts, exportPDF, toast, startCamera, captureAndAnalyze,
+           handleImageUpload, confirmIAImport, closeIAModal };
+})();
+
+// ─── ARRANQUE ─────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', ()=>App.init());
+</script>
+</body>
+</html>
